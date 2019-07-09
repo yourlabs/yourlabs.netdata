@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: James Pic
+  role_name: fqdn
+  description: Automatic hostname configuration
+  company: YourLabs
+  issue_tracker_url: https://yourlabs.io/oss/yourlabs.fqdn/issues
+  license: MIT
+  min_ansible_version: 1.2
+  platforms:
+  - name: GenericLinux
+    versions:
+    - all
+
+dependencies: []

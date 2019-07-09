@@ -1,0 +1,24 @@
+---
+
+- include_role: name=yourlabs.remember tasks_from=questions
+
+- name: Set hostname="{{ fqdn.split('.')[0] }}"
+  set_fact:
+    hostname: "{{ fqdn.split('.')[0] }}"
+
+- name: Set fqdn in /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.0\.1 (.*)$'
+    line: 127.0.0.1 {{ fqdn }} \1
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Set hostname in /etc/hostname
+  copy:
+    content: '{{ hostname }}'
+    dest: /etc/hostname
+    owner: root
+    group: root
+    mode: '0644'
