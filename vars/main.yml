@@ -1,11 +1,11 @@
 ---
 
 rolename: yourlabs.fqdn
-questions:
-  fqdn: |
-    What is the host FQDN ?
-    A FQDN consists of the short hostname, followed by the DNS domain name.
-    If you choose www.foo.com, then the hostname will be www.
-    If you choose staging.foo.com, then the hostname will be staging.
-  validation:
-    fqdn: '\w+\.[\w+.]+'
+rolevars:
+  fqdn:
+    question: |
+      What is the host FQDN ?
+      A FQDN consists of the short hostname, followed by the DNS domain name.
+      If you choose www.foo.com, then the hostname will be www.
+      If you choose staging.foo.com, then the hostname will be staging.
+    regexp: '\w+\.[\w+.]+'
