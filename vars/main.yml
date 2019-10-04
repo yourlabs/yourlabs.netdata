@@ -1,11 +1,36 @@
 ---
+remember_fact: yourlabs.netdata
+remember:
+- name: home
+  question: What is the home directory for this deployment ?
+  default: /home/netdata
 
-rolename: yourlabs.fqdn
-rolevars:
-  fqdn:
-    question: |
-      What is the host FQDN ?
-      A FQDN consists of the short hostname, followed by the DNS domain name.
-      If you choose www.foo.com, then the hostname will be www.
-      If you choose staging.foo.com, then the hostname will be staging.
-    regexp: '\w+\.[\w+.]+'
+- name: email_sender
+  question: What is the email sender for netdata ?
+  default: netdata@{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}
+
+- name: netdata_dns
+  question: What dns for the netdata deployment ?
+  default: netdata.{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}
+
+- name: prometheus_dns
+  question: What dns for the prometheus deployment ?
+  default: prometheus.{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}
+
+- name: grafana_dns
+  question: What dns for the grafana deployment ?
+  default: grafana.{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}
+
+netdata_packages:
+- autoconf
+- autoconf-archive
+- autogen
+- automake
+- gcc
+- git
+- libmnl-dev
+- make
+- pkg-config
+- uuid-dev
+- zlib1g-dev
+- sysfsutils

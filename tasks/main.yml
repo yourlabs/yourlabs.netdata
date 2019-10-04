@@ -1,24 +1,146 @@
 ---
 
-- include_role: name=yourlabs.remember tasks_from=questions
+- include_role: name=yourlabs.remember
 
-- name: Set hostname="{{ fqdn.split('.')[0] }}"
-  set_fact:
-    hostname: "{{ fqdn.split('.')[0] }}"
+- name: Create configuration directories
+  file:
+    state: directory
+    path: /etc/netdata
 
-- name: Set fqdn in /etc/hosts
+- name: Install dependencies
+  apt:
+    name: '{{ netdata_packages }}'
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: enable sysfs KSM
   lineinfile:
-    path: /etc/hosts
-    regexp: '^127\.0\.0\.1 (.*)$'
-    line: 127.0.0.1 {{ fqdn }} \1
-    owner: root
-    group: root
-    mode: '0644'
+    path: /etc/sysfs.conf
+    line: 'kernel/mm/ksm/run = 1'
 
-- name: Set hostname in /etc/hostname
+- name: config sysfs KSM
+  lineinfile:
+    path: /etc/sysfs.conf
+    line: 'kernel/mm/ksm/sleep_millisecs = 1000'
+
+- name: Clone repo
+  register: netdata_git
+  git:
+    clone: yes
+    update: yes
+    repo: https://github.com/firehol/netdata.git
+    dest: '{{ home }}/git'
+
+- name: Install script
+  when: netdata_git.changed
+  shell: cd {{ home }}/git && ./netdata-installer.sh --dont-wait --libs-are-really-here
+
+- name: Make netdata-proxy home
+  file: name=/home/netdata-proxy state=directory
+
+- name: Install nginx proxy config
   copy:
-    content: '{{ hostname }}'
-    dest: /etc/hostname
-    owner: root
-    group: root
-    mode: '0644'
+    dest: /home/netdata-proxy/nginx.conf
+    content: |
+      server {
+        listen 80;
+        location / {
+          proxy_pass http://172.17.0.1:19999;
+
+          proxy_redirect off;
+          proxy_http_version 1.1;
+
+          proxy_set_header X-Forwarded-Host $host;
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Real-IP $remote_addr;
+        }
+      }
+
+- name: Create netdata network
+  docker_network:
+    name: netdata
+
+- name: Setup nginx proxy container
+  tags: docker
+  docker_container:
+    name: netdata-proxy
+    image: nginx
+    restart_policy: unless-stopped
+    volumes:
+    - /home/netdata-proxy/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+    - name: netdata
+    - name: web
+    labels:
+      traefik.frontend.rule: 'Host: {{ netdata_dns }}'
+      traefik.enable: 'true'
+      traefik.frontend.headers.SSLRedirect: 'true'
+      traefik.frontend.entryPoints: http,https
+      traefik.frontend.auth.basic.usersFile: /htpasswd/root
+
+- name: Make prometheus home
+  file: name=/home/prometheus state=directory
+
+- name: Copy prometheus configuration
+  copy:
+    src: files/prometheus.yml
+    dest: /home/prometheus/prometheus.yml
+
+- name: Setup prometheus container
+  tags: docker
+  docker_container:
+    hostname: prometheus
+    name: prometheus
+    image: prom/prometheus
+    restart_policy: unless-stopped
+    volumes:
+    - /home/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    - prometheus-data:/prometheus
+    ports:
+    - 9090:9090
+    networks:
+    - name: netdata
+    - name: web
+    labels:
+      traefik.frontend.rule: 'Host: {{ prometheus_dns }}'
+      traefik.enable: 'true'
+      traefik.frontend.headers.SSLRedirect: 'true'
+      traefik.frontend.entryPoints: http,https
+      traefik.frontend.auth.basic.usersFile: /htpasswd/root
+
+- name: Make grafana home
+  file: name=/home/grafana state=directory
+
+- name: Make grafana datasources dir
+  file: name=/home/grafana/datasources state=directory
+
+- name: Setup grafana container
+  tags: docker
+  docker_container:
+    name: grafana
+    image: grafana/grafana
+    restart_policy: unless-stopped
+    hostname: grafana
+    volumes:
+    - grafana-data:/var/lib/grafana
+    - grafana-plugins:/var/lib/grafana/plugins
+    networks:
+    - name: netdata
+    - name: web
+    ports:
+    - 3000:3000
+    labels:
+      traefik.frontend.rule: 'Host: {{ grafana_dns }}'
+      traefik.enable: 'true'
+      traefik.frontend.headers.SSLRedirect: 'true'
+      traefik.frontend.entryPoints: http,https
+      traefik.frontend.auth.basic.usersFile: /htpasswd/root
+    env:
+      #GF_SECURITY_ADMIN_PASSWORD: '{{ grafana_password }}'
+      GF_AUTH_BASIC_ENABLED: 'false'
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_SERVER_ROOT_URL: 'https://{{ grafana_dns }}'
+
+- include_role: name=yourlabs.remember tasks_from=success
