@@ -35,17 +35,28 @@
   when: netdata_git.changed
   shell: cd {{ home }}/git && ./netdata-installer.sh --dont-wait --libs-are-really-here
 
+- name: Configure alarms
+  template:
+    src: health_alarm_notify.conf
+    dest: /etc/netdata/health_alarm_notify.conf
+    owner: netdata
+    mode: '0644'
+
+- name: Test alarms
+  shell: sudo -u netdata NETDATA_ALARM_NOTIFY_DEBUG=1 /usr/libexec/netdata/plugins.d/alarm-notify.sh test
+
 - name: Make netdata-proxy home
   file: name=/home/netdata-proxy state=directory
 
 - name: Install nginx proxy config
+  register: proxy_config
   copy:
     dest: /home/netdata-proxy/nginx.conf
     content: |
       server {
         listen 80;
         location / {
-          proxy_pass http://172.17.0.1:19999;
+          proxy_pass http://{{ ansible_docker0['ipv4']['address'] }}:19999;
 
           proxy_redirect off;
           proxy_http_version 1.1;
@@ -67,6 +78,7 @@
     name: netdata-proxy
     image: nginx
     restart_policy: unless-stopped
+    restart: '{{ "yes" if proxy_config.changed else "no" }}'
     volumes:
     - /home/netdata-proxy/nginx.conf:/etc/nginx/conf.d/default.conf
     networks:

@@ -21,6 +21,17 @@ remember:
   question: What dns for the grafana deployment ?
   default: grafana.{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}
 
+- name: recipient_email
+  question: What email address to send alerts to ?
+  type: email
+
+- name: slack_webhook
+  question: What is the slack webhook to push to ?
+
+- name: slack_channel
+  question: What is the slack channel to push to ?
+  when: slack_webhook|length
+
 netdata_packages:
 - autoconf
 - autoconf-archive
