@@ -1,10 +1,10 @@
 ---
 galaxy_info:
   author: James Pic
-  role_name: fqdn
-  description: Automatic hostname configuration
+  role_name: netdata
+  description: Run netdata in docker
   company: YourLabs
-  issue_tracker_url: https://yourlabs.io/oss/yourlabs.fqdn/issues
+  issue_tracker_url: https://yourlabs.io/oss/yourlabs.netdata/issues
   license: MIT
   min_ansible_version: 1.2
   platforms:
