@@ -85,11 +85,18 @@
     - name: netdata
     - name: web
     labels:
-      traefik.frontend.rule: 'Host: {{ netdata_dns }}'
       traefik.enable: 'true'
-      traefik.frontend.headers.SSLRedirect: 'true'
-      traefik.frontend.entryPoints: http,https
-      traefik.frontend.auth.basic.usersFile: /htpasswd/root
+      traefik.docker.network: web
+      traefik.http.routers.netdata-proxy.entryPoints: web
+      traefik.http.routers.netdata-proxy.rule: host(`{{ netdata_dns }}`)
+      traefik.http.routers.netdata-proxy.middlewares: redirect-to-https
+      traefik.http.routers.netdata-proxy-ssl.entryPoints: websecure
+      traefik.http.routers.netdata-proxy-ssl.rule: host(`{{ netdata_dns }}`)
+      traefik.http.routers.netdata-proxy-ssl.tls: 'true'
+      traefik.http.routers.netdata-proxy-ssl.tls.certResolver: leresolver
+      traefik.http.routers.netdata-proxy-ssl.service: netdata-proxy-ssl
+      traefik.http.services.netdata-proxy-ssl.loadBalancer.server.port: '80'
+      traefik.http.routers.netdata-proxy-ssl.middlewares: authtraefik
 
 - name: Make prometheus home
   file: name=/home/prometheus state=directory
@@ -115,11 +122,18 @@
     - name: netdata
     - name: web
     labels:
-      traefik.frontend.rule: 'Host: {{ prometheus_dns }}'
       traefik.enable: 'true'
-      traefik.frontend.headers.SSLRedirect: 'true'
-      traefik.frontend.entryPoints: http,https
-      traefik.frontend.auth.basic.usersFile: /htpasswd/root
+      traefik.docker.network: web
+      traefik.http.routers.prometheus.entryPoints: web
+      traefik.http.routers.prometheus.rule: host(`{{ prometheus_dns }}`)
+      traefik.http.routers.prometheus.middlewares: redirect-to-https
+      traefik.http.routers.prometheus-ssl.entryPoints: websecure
+      traefik.http.routers.prometheus-ssl.rule: host(`{{ prometheus_dns }}`)
+      traefik.http.routers.prometheus-ssl.tls: 'true'
+      traefik.http.routers.prometheus-ssl.tls.certResolver: leresolver
+      traefik.http.routers.prometheus-ssl.service: prometheus-ssl
+      traefik.http.services.prometheus-ssl.loadBalancer.server.port: '9090'
+      traefik.http.routers.prometheus-ssl.middlewares: authtraefik
 
 - name: Make grafana home
   file: name=/home/grafana state=directory
@@ -143,13 +157,21 @@
     ports:
     - 3000:3000
     labels:
-      traefik.frontend.rule: 'Host: {{ grafana_dns }}'
       traefik.enable: 'true'
-      traefik.frontend.headers.SSLRedirect: 'true'
-      traefik.frontend.entryPoints: http,https
-      traefik.frontend.auth.basic.usersFile: /htpasswd/root
+      traefik.docker.network: web
+      traefik.http.routers.grafana.entryPoints: web
+      traefik.http.routers.grafana.rule: host(`{{ grafana_dns }}`)
+      traefik.http.routers.grafana.middlewares: redirect-to-https
+      traefik.http.routers.grafana-ssl.entryPoints: websecure
+      traefik.http.routers.grafana-ssl.rule: host(`{{ grafana_dns }}`)
+      traefik.http.routers.grafana-ssl.tls: 'true'
+      traefik.http.routers.grafana-ssl.tls.certResolver: leresolver
+      traefik.http.routers.grafana-ssl.service: grafana-ssl
+      traefik.http.services.grafana-ssl.loadBalancer.server.port: '3000'
+      traefik.http.routers.grafana-ssl.middlewares: authtraefik
     env:
       #GF_SECURITY_ADMIN_PASSWORD: '{{ grafana_password }}'
+      GF_SERVER_DOMAIN: '{{ grafana_dns }}'
       GF_AUTH_BASIC_ENABLED: 'false'
       GF_AUTH_DISABLE_LOGIN_FORM: 'true'
       GF_AUTH_ANONYMOUS_ENABLED: 'true'
