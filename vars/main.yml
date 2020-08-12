@@ -30,7 +30,14 @@ remember:
 
 - name: slack_channel
   question: What is the slack channel to push to ?
-  when: slack_webhook|length
+  when: slack_webhook is defined and slack_webhook != ''
+
+- name: telegram_bot_token
+  question: What is the telegram bot token ?
+
+- name: telegram_recipient
+  question: What is the recipient id(s) for telegram ? (You may add alert level. For example, -100311112222 212341234|critical)
+  when: telegram_bot_token is defined and telegram_bot_token != ''
 
 netdata_packages:
 - autoconf
@@ -45,3 +52,4 @@ netdata_packages:
 - uuid-dev
 - zlib1g-dev
 - sysfsutils
+- libuv1-dev
