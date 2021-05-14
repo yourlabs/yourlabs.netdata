@@ -9,7 +9,7 @@
 
 - name: Downlaod dependencies script
   get_url:
-    url: "https://raw.githubusercontent.com/netdata/netdata-demo-site/master/install-required-packages.sh"
+    url: "https://raw.githubusercontent.com/netdata/netdata/master/packaging/installer/install-required-packages.sh"
     dest: /tmp/install-required-packages.sh
 
 - name: Run dependencies script
