@@ -7,21 +7,22 @@
     state: directory
     path: /etc/netdata
 
-- name: Install dependencies
-  apt:
-    name: '{{ netdata_packages }}'
+- name: Downlaod dependencies script
+  get_url:
+    url: "https://raw.githubusercontent.com/netdata/netdata-demo-site/master/install-required-packages.sh"
+    dest: /tmp/install-required-packages.sh
+
+- name: Run dependencies script
+  shell: "bash /tmp/install-required-packages.sh netdata --dont-wait --non-interactive"
+
+- name: enable & config KSM
+  blockinfile:
+    path: /etc/tmpfiles.d/ksm.conf
+    block: |
+      w /sys/kernel/mm/ksm/run - - - - 1
+      w /sys/kernel/mm/ksm/sleep_millisecs - - - - 1000
     state: present
-  when: ansible_os_family == "Debian"
-
-- name: enable sysfs KSM
-  lineinfile:
-    path: /etc/sysfs.conf
-    line: 'kernel/mm/ksm/run = 1'
-
-- name: config sysfs KSM
-  lineinfile:
-    path: /etc/sysfs.conf
-    line: 'kernel/mm/ksm/sleep_millisecs = 1000'
+    create: true
 
 - name: Clone repo
   register: netdata_git
