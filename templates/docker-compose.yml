@@ -1,0 +1,48 @@
+version: '3'
+services:
+  netdata:
+    image: netdata/netdata
+    container_name: netdata
+    hostname: '{{ netdata_dns }}'
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - '{{ home }}/netdataconfig/netdata:/etc/netdata:ro'
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    labels: 
+      #traefik.http.middlewares.netdata-redirect.redirectregex.regex: ^http://netdata.ci.yourlabs.io/(.*)
+      #traefik.http.middlewares.netdata-redirect.redirectregex.replacement: https://netdata.ci.yourlabs.io/$${1}
+      #traefik.http.routers.netdata-ssl.middlewares: netdata-redirect
+      traefik.http.routers.netdata-ssl.entryPoints: websecure
+      traefik.http.routers.netdata-ssl.rule: host(`netdata.ci.yourlabs.io`)
+      traefik.http.routers.netdata-ssl.tls: 'true'
+      traefik.http.routers.netdata-ssl.tls.certResolver: leresolver
+      traefik.http.routers.netdata-ssl.service: netdata-ssl
+      traefik.http.services.netdata-ssl.loadBalancer.server.port: '19999'
+      traefik.http.middlewares.netdatabaseauth.basicauth.usersFile: '/htpasswd/root'
+      traefik.http.middlewares.netdatabaseauth.basicauth.removeheader: 'true'
+      raefik.http.routers.netdata-ssl.middlewares: netdatabaseauth
+      traefik.docker.network: web
+      traefik.enable: 'true'
+    networks:
+      - web
+      - netdata
+
+volumes:
+  netdatalib:
+  netdatacache:
+
+networks:   
+  web:     
+    external: true
+  netdata:
+
