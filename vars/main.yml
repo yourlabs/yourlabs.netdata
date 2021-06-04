@@ -9,6 +9,32 @@ remember:
   question: What is the email sender for netdata ?
   default: netdata@{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}
 
+- name: smtp_addr
+  question: What is the smtp server address and port ?
+  default: 'smtps://smtp.gmail.com:465'
+
+- name: email_password
+  question: What is the email password ?
+
+- name: mattermost_channel_id
+  question: What is the Mattermost channel id ?
+
+- name: mattermost_user_id
+  question: What is the Mattermost user id ?
+  when: mattermost_channel_id is defined
+
+
+- name: mattermost_token
+  question: What is the Mattermost token ?
+  when: mattermost_channel_id is defined and mattermost_user_id is defined
+
+- name: free_id
+  question: What is your Free id ?
+
+- name: free_token
+  question: What is your Free token ?
+  when: free_id is defined
+
 - name: netdata_dns
   question: What dns for the netdata deployment ?
   default: netdata.{{ ansible_facts.ansible_local.get('yourlabs_fqdn', {}).get('fqdn', 'localhost') }}

@@ -23,6 +23,13 @@
     owner: root
     mode: '0644'
 
+- name: Configure custom alert script
+  template:
+    src: custom_alert.sh
+    dest: '{{ home }}/custom_alert.sh'
+    owner: root
+    mode: '0755'
+
 - name: Create netdata network
   docker_network:
     name: netdata
