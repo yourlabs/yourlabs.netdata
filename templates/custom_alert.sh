@@ -38,15 +38,18 @@ CHANNEL_ID="{{ mattermost_channel_id }}"
 MATTERMOST_USER_ID="{{ mattermost_user_id }}"
 FREE_ID="{{ free_id }}"
 FREE_TOKEN="{{ free_token }}"
+REC_EMAIL="{{ recipient_email }}"
 
 
 {%raw%}
 # Emails
 if [[ "$SENDER_PASS" != "" ]] && [[ "$SMTP_ADDR" != "" ]]; then
   f=$(mktemp /tmp/alert.XXXXXX)
-  echo -e "$(cat header.txt)$HOST:$WHEN:$NAME\n\n$MSG" >> $f
-  curl -s --ssl-reqd \
-    --url "$SMTP_ADDR" \ 
+  echo -e "From: \"Netdata\" <$SENDER_EMAIL>" >> $f
+  echo -e "To: \"\" <$REC_EMAIL>" >> $f
+  echo -e "Subject: [$HOST]`date -d @$WHEN +'%e-%b %H:%M:%S'`:$NAME\n\n$MSG" >> $f
+  curl -s  --ssl-reqd \
+    --url "$SMTP_ADDR" \
     --user "$SENDER_EMAIL:$SENDER_PASS" \
     --mail-from "$SENDER_EMAIL"  \
     --mail-rcpt "$REC_EMAIL" \
@@ -54,7 +57,7 @@ if [[ "$SENDER_PASS" != "" ]] && [[ "$SMTP_ADDR" != "" ]]; then
 fi
 
 # Mattermost
-if [[ "$MATTERMOST_USER_ID" != "" ]] && [[ "$CHANNEL_ID" != "" ]] && [["$MATTERMOST_TOKEN" != "" ]] ; then
+if [[ "$MATTERMOST_USER_ID" != "" ]] && [[ "$CHANNEL_ID" != "" ]] && [[ "$MATTERMOST_TOKEN" != "" ]] ; then
   curl -s 'https://yourlabs.chat/api/v4/posts' \
     --header "Authorization: Bearer $MATTERMOST_TOKEN"  \
     --data-raw '{"file_ids":[],
@@ -65,5 +68,7 @@ fi
 
 # SMS (only work for FREE mobile)
 # If don't work check if  mes-options ->  Notifications par SMS is activated
-curl -s "https://smsapi.free-mobile.fr/sendmsg?user=$FREE_ID&pass=$FREE_TOKEN&msg=$encode"
+if [[ "$FREE_ID" != "" ]] && [[ "$FREE_TOKEN" != "" ]]; then
+  curl -s "https://smsapi.free-mobile.fr/sendmsg?user=$FREE_ID&pass=$FREE_TOKEN&msg=$encode"
+fi
 {%endraw%}

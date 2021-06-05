@@ -1,5 +1,4 @@
 ---
-
 - include_role: name=yourlabs.remember
 
 - name: Create netdata home
@@ -26,9 +25,16 @@
 - name: Configure custom alert script
   template:
     src: custom_alert.sh
-    dest: '{{ home }}/custom_alert.sh'
+    dest: /root/custom_alert.sh
     owner: root
     mode: '0755'
+    force: false
+
+- name: Delete creds in /etc/ansible/facts.d/yourlabs.netdata
+  lineinfile:
+    dest: /etc/ansible/facts.d/yourlabs_netdata.facts
+    state: absent
+    regexp: '^.*(email_password|mattermost_token|free_token).*$'
 
 - name: Create netdata network
   docker_network:
@@ -46,9 +52,7 @@
 - name: Start netdata docker-compose.yml
   docker_compose:
     project_src: /home/netdata/
-    restarted: no
     pull: yes
-    recreate: always
 
 - name: Make prometheus home
   file: name=/home/prometheus state=directory
